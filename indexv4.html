@@ -1,0 +1,2150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pour — Filter Coffee</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black: #0d0d0d;
+  --white: #f5f5f5;
+  --mid: #888;
+  --faint: #1e1e1e;
+  --line: #2a2a2a;
+  --line-light: #3d3d3d;
+
+  /* Fluid type — scales from 360px to 1600px viewport */
+  --tx-xs:   clamp(0.67rem, 0.56rem + 0.28vw, 0.8rem);
+  --tx-sm:   clamp(0.8rem,  0.66rem + 0.38vw, 0.97rem);
+  --tx-base: clamp(0.92rem, 0.74rem + 0.46vw, 1.1rem);
+  --tx-md:   clamp(1.05rem, 0.84rem + 0.55vw, 1.28rem);
+  --tx-lg:   clamp(1.2rem,  0.95rem + 0.7vw,  1.5rem);
+  --tx-xl:   clamp(1.4rem,  1.05rem + 0.95vw, 1.85rem);
+  --tx-2xl:  clamp(1.7rem,  1.2rem  + 1.35vw, 2.5rem);
+  --tx-3xl:  clamp(2.2rem,  1.5rem  + 1.8vw,  3.2rem);
+
+  /* Fluid sidebar */
+  --sidebar-w: clamp(220px, 19vw, 320px);
+}
+
+html, body {
+  height: 100%;
+  background: var(--black);
+  color: var(--white);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 300;
+  font-size: var(--tx-base);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── LAYOUT ── */
+.app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+/* ── HEADER ── */
+header {
+  display: flex;
+  align-items: center;
+  padding: 0 clamp(16px, 2vw, 36px);
+  height: clamp(46px, 4vw, 62px);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  gap: clamp(12px, 1.5vw, 24px);
+}
+.wordmark {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-sm);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--white);
+  text-transform: uppercase;
+}
+.wordmark span { color: var(--mid); font-weight: 300; }
+.header-nav { display: flex; gap: 0; margin-left: auto; }
+.hn-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--mid);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px clamp(10px, 1.2vw, 20px);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.hn-btn:hover { color: var(--white); }
+.hn-btn.active { color: var(--white); border-bottom-color: var(--white); }
+
+.header-add-fab {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── PANELS ── */
+.panel { display: none; flex: 1; overflow: hidden; }
+.panel.active { display: flex; }
+
+/* ══════════════════════════════════
+   RECIPES PANEL
+══════════════════════════════════ */
+#recipes-panel { flex-direction: row; }
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: 200px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.sidebar-search {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.sidebar-search input {
+  width: 100%;
+  background: var(--faint);
+  border: 1px solid var(--line-light);
+  color: var(--white);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  padding: clamp(6px, 0.4vw, 9px) clamp(8px, 0.6vw, 12px);
+  outline: none;
+  border-radius: 0;
+  transition: border-color 0.15s;
+}
+.sidebar-search input::placeholder { color: var(--mid); }
+.sidebar-search input:focus { border-color: var(--white); }
+
+.sidebar-scroll { overflow-y: auto; flex: 1; }
+.sidebar-scroll::-webkit-scrollbar { width: 3px; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background: var(--line-light); }
+
+/* Dripper group */
+.dripper-group { }
+.dripper-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px 6px;
+  position: sticky;
+  top: 0;
+  background: var(--black);
+  z-index: 2;
+  cursor: pointer;
+  user-select: none;
+}
+.dripper-heading-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--mid);
+}
+.dripper-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  color: var(--line-light);
+  margin-left: auto;
+}
+.dripper-toggle {
+  font-size: 9px;
+  color: var(--line-light);
+  transition: transform 0.2s;
+}
+.dripper-group.collapsed .dripper-toggle { transform: rotate(-90deg); }
+.dripper-group.collapsed .dripper-items { display: none; }
+
+/* Recipe item */
+.recipe-item {
+  padding: clamp(9px, 0.7vw, 14px) clamp(12px, 1vw, 18px);
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.recipe-item:hover { background: var(--faint); }
+.recipe-item.active { background: var(--white); }
+.recipe-item.active .ri-title { color: var(--black); }
+.recipe-item.active .ri-sub { color: #444; }
+.recipe-item.active .ri-badge { border-color: #bbb; color: #444; }
+.ri-title {
+  font-size: var(--tx-sm);
+  font-weight: 400;
+  color: var(--white);
+  line-height: 1.3;
+  margin-bottom: 3px;
+}
+.ri-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  color: var(--mid);
+}
+.ri-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  color: var(--line-light);
+  margin-top: 4px;
+}
+.recipe-item.active .ri-meta { color: #666; }
+.ri-badges { display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
+.ri-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  padding: 2px 6px;
+  border: 1px solid var(--line-light);
+  color: var(--mid);
+  text-transform: uppercase;
+}
+.ri-badge.user-badge { border-color: var(--mid); color: var(--white); }
+
+/* Detail pane */
+.detail-pane {
+  flex: 1;
+  overflow-y: auto;
+  padding: clamp(24px, 2.5vw, 52px) clamp(24px, 3.5vw, 64px);
+}
+.detail-pane::-webkit-scrollbar { width: 3px; }
+.detail-pane::-webkit-scrollbar-thumb { background: var(--line-light); }
+
+.dp-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 10px;
+}
+.dp-title {
+  font-size: var(--tx-2xl);
+  font-weight: 400;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+.dp-author {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-sm);
+  color: var(--mid);
+  margin-bottom: 32px;
+  font-style: italic;
+}
+
+/* Stats row */
+.stats-row {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 36px;
+}
+.stat-cell {
+  flex: 1;
+  padding: clamp(10px, 0.9vw, 20px) clamp(10px, 1.2vw, 24px);
+  border-right: 1px solid var(--line);
+}
+.stat-cell:last-child { border-right: none; }
+.stat-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 4px;
+}
+.stat-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xl);
+  font-weight: 500;
+  color: var(--white);
+  line-height: 1;
+}
+.stat-unit {
+  font-size: var(--tx-xs);
+  font-weight: 300;
+  color: var(--mid);
+}
+
+/* Section label */
+.section-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--mid);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.dp-notes {
+  font-size: var(--tx-base);
+  line-height: 1.75;
+  color: #aaa;
+  margin-bottom: 36px;
+  max-width: 580px;
+}
+
+/* Pour table */
+.pour-table { width: 100%; max-width: 560px; border-collapse: collapse; margin-bottom: 36px; }
+.pour-table th {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mid);
+  text-align: left;
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 400;
+}
+.pour-table th:not(:first-child) { text-align: right; }
+.pour-table td {
+  padding: clamp(8px, 0.65vw, 14px) 0;
+  border-bottom: 1px solid var(--line);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-sm);
+  color: var(--white);
+  vertical-align: middle;
+}
+.pour-table td:not(:first-child) { text-align: right; color: var(--mid); }
+.td-at { width: 60px; color: var(--white) !important; }
+.td-desc { font-family: 'IBM Plex Sans', sans-serif !important; font-size: var(--tx-base) !important; color: var(--white) !important; }
+.td-pour { }
+.td-total { }
+
+/* Action buttons */
+.dp-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn-primary {
+  background: var(--white);
+  color: var(--black);
+  border: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: clamp(9px, 0.7vw, 14px) clamp(18px, 1.5vw, 28px);
+  cursor: pointer;
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.85; }
+.btn-secondary {
+  background: none;
+  color: var(--mid);
+  border: 1px solid var(--line-light);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: clamp(9px, 0.7vw, 14px) clamp(14px, 1.2vw, 22px);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.btn-secondary:hover { color: var(--white); border-color: var(--white); }
+.btn-danger {
+  background: none;
+  color: #666;
+  border: 1px solid var(--line);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: clamp(9px, 0.7vw, 14px) clamp(14px, 1.2vw, 22px);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.btn-danger:hover { color: #e05; border-color: #e05; }
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  height: 100%;
+  padding: 0 48px;
+  color: var(--mid);
+}
+.empty-state p { font-size: var(--tx-base); line-height: 1.7; max-width: 320px; }
+
+/* ══════════════════════════════════
+   TIMER PANEL
+══════════════════════════════════ */
+#timer-panel {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.timer-container {
+  width: 100%;
+  max-width: clamp(340px, 36vw, 540px);
+  padding: clamp(28px, 3vw, 52px) clamp(16px, 2vw, 32px) 60px;
+  margin: 0 auto;
+}
+
+.timer-header { margin-bottom: 36px; }
+.timer-recipe-title { font-size: var(--tx-xl); font-weight: 400; margin-bottom: 3px; }
+.timer-recipe-meta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  color: var(--mid);
+  letter-spacing: 0.1em;
+}
+
+/* Clock */
+.clock-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
+  position: relative;
+}
+.clock-svg { display: block; }
+.clock-track { fill: none; stroke: var(--line); stroke-width: 1.5; }
+.clock-arc {
+  fill: none;
+  stroke: var(--white);
+  stroke-width: 1.5;
+  stroke-linecap: butt;
+  transition: stroke-dashoffset 0.9s linear;
+}
+.clock-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.clock-time-display {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-3xl);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.clock-step-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mid);
+}
+.clock-step-action {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-sm);
+  color: var(--white);
+  margin-top: 2px;
+}
+
+/* Step list in timer */
+.timer-steps { margin-bottom: 28px; }
+.ts-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 56px 20px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ts-at {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--mid);
+}
+.ts-desc { font-size: var(--tx-sm); color: #888; }
+.ts-pour {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-sm);
+  color: var(--mid);
+  text-align: right;
+}
+.ts-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid var(--line-light);
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.ts-row.done .ts-at, .ts-row.done .ts-desc, .ts-row.done .ts-pour { color: var(--line-light); }
+.ts-row.done .ts-dot { background: var(--mid); border-color: var(--mid); }
+.ts-row.current .ts-at, .ts-row.current .ts-desc { color: var(--white); }
+.ts-row.current .ts-pour { color: var(--white); }
+.ts-row.current .ts-dot { background: var(--white); border-color: var(--white); }
+
+/* Timer controls */
+.timer-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.tctrl {
+  background: none;
+  border: 1px solid var(--line-light);
+  color: var(--mid);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  padding: clamp(8px, 0.6vw, 12px) clamp(14px, 1.2vw, 22px);
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.05em;
+}
+.tctrl:hover { color: var(--white); border-color: var(--white); }
+.tctrl.tctrl-play {
+  background: var(--white);
+  border-color: var(--white);
+  color: var(--black);
+  font-weight: 500;
+  padding: clamp(8px, 0.6vw, 12px) clamp(24px, 2vw, 40px);
+}
+.tctrl.tctrl-play:hover { opacity: 0.85; }
+
+/* Water progress */
+.water-progress { margin-top: 8px; }
+.water-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.water-row span {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  color: var(--mid);
+  letter-spacing: 0.08em;
+}
+.water-bar { height: 2px; background: var(--line); }
+.water-fill { height: 100%; background: var(--white); transition: width 0.8s linear; }
+
+/* ══════════════════════════════════
+   ADD RECIPE PANEL
+══════════════════════════════════ */
+#add-panel {
+  overflow-y: auto;
+  flex-direction: column;
+}
+#add-panel::-webkit-scrollbar { width: 3px; }
+#add-panel::-webkit-scrollbar-thumb { background: var(--line-light); }
+
+.add-form-wrap {
+  max-width: 600px;
+  padding: clamp(24px, 2.5vw, 52px) clamp(20px, 3.5vw, 56px) 80px;
+  width: 100%;
+}
+
+.form-title {
+  font-size: var(--tx-xl);
+  font-weight: 400;
+  margin-bottom: 32px;
+}
+.form-section-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--mid);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 6px;
+  margin-bottom: 16px;
+  margin-top: 32px;
+}
+.form-section-label:first-of-type { margin-top: 0; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.form-row.single { grid-template-columns: 1fr; }
+.form-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+.form-field { display: flex; flex-direction: column; gap: 5px; }
+.form-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mid);
+}
+.form-input, .form-select, .form-textarea {
+  background: var(--faint);
+  border: 1px solid var(--line-light);
+  color: var(--white);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: var(--tx-base);
+  font-weight: 300;
+  padding: clamp(7px, 0.5vw, 11px) clamp(9px, 0.7vw, 13px);
+  outline: none;
+  border-radius: 0;
+  -webkit-appearance: none;
+  transition: border-color 0.15s;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--white); }
+.form-input::placeholder, .form-textarea::placeholder { color: var(--line-light); }
+.form-select option { background: #1a1a1a; }
+.form-textarea { resize: vertical; min-height: 80px; }
+
+/* Steps editor */
+.steps-editor { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.step-edit-row {
+  display: grid;
+  grid-template-columns: 64px 1fr 64px 32px;
+  gap: 8px;
+  align-items: center;
+}
+.step-edit-row .form-input { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+.step-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--line-light);
+  text-align: center;
+}
+.btn-icon {
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--mid);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: all 0.15s;
+}
+.btn-icon:hover { border-color: #e05; color: #e05; }
+.btn-add-step {
+  background: none;
+  border: 1px dashed var(--line-light);
+  color: var(--mid);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 9px;
+  width: 100%;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+.btn-add-step:hover { border-color: var(--white); color: var(--white); }
+
+.form-hint {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  color: var(--line-light);
+  margin-top: 2px;
+}
+.ratio-hint-row { margin: -4px 0 var(--sp-sm); }
+.ratio-hint-row .form-hint { color: var(--mid); }
+
+.form-actions { display: flex; gap: 10px; margin-top: 28px; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--white);
+  color: var(--black);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  padding: 10px 20px;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  z-index: 100;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 50;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #111;
+  border: 1px solid var(--line-light);
+  padding: 32px;
+  max-width: 380px;
+  width: 90%;
+}
+.modal-title { font-size: var(--tx-md); font-weight: 400; margin-bottom: 10px; }
+.modal-body { font-size: var(--tx-base); color: var(--mid); line-height: 1.6; margin-bottom: 24px; }
+.modal-actions { display: flex; gap: 10px; }
+
+/* ── MOBILE ── */
+@media (max-width: 680px) {
+  body { padding-bottom: 0; }
+
+  /* Hide desktop top nav, show bottom tab bar instead */
+  .header-nav { display: none; }
+  header { justify-content: center; position: relative; }
+  .header-add-fab {
+    display: flex;
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .app { height: 100vh; }
+
+  /* Recipes panel becomes a single-column stack; list and detail are separate "screens" */
+  #recipes-panel { flex-direction: column; position: relative; overflow: hidden; }
+  .sidebar {
+    width: 100%; min-width: 0; border-right: none; max-height: none;
+    height: 100%;
+  }
+  .sidebar-scroll { padding-bottom: 80px; }
+  .detail-pane {
+    position: absolute;
+    inset: 0;
+    background: var(--black);
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    z-index: 5;
+    padding: 16px 16px 90px;
+  }
+  #recipes-panel.detail-open .detail-pane { transform: translateX(0); }
+  #recipes-panel.detail-open .sidebar { display: none; }
+
+  .mobile-back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: var(--mid);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: var(--tx-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 0 16px;
+    cursor: pointer;
+  }
+  .mobile-back-btn:active { color: var(--white); }
+
+  .dp-title { font-size: var(--tx-xl); }
+  .stats-row { flex-wrap: wrap; }
+  .stat-cell { min-width: 50%; }
+  .add-form-wrap { padding: 16px 16px 100px; }
+  .form-row { grid-template-columns: 1fr; }
+  .form-row.triple { grid-template-columns: 1fr 1fr; }
+  header { padding: 0 16px; }
+  .wordmark { font-size: 12px; }
+
+  /* Timer + Add panels get bottom padding so content isn't hidden behind tab bar */
+  #timer-panel, #add-panel { padding-bottom: 0; }
+  .timer-container { padding-bottom: 90px; }
+
+  /* Bottom tab bar */
+  .bottom-tabs {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 64px;
+    background: var(--black);
+    border-top: 1px solid var(--line);
+    z-index: 20;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .bt-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    color: var(--mid);
+    cursor: pointer;
+  }
+  .bt-btn svg { stroke: var(--mid); transition: stroke 0.15s; }
+  .bt-btn.active { color: var(--white); }
+  .bt-btn.active svg { stroke: var(--white); }
+  .bt-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .bt-btn.bt-add-btn .bt-icon-circle {
+    width: 30px; height: 30px;
+    border: 1.5px solid var(--mid);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .bt-btn.bt-add-btn.active .bt-icon-circle {
+    background: var(--white); border-color: var(--white);
+  }
+  .bt-btn.bt-add-btn.active .bt-icon-circle svg { stroke: var(--black); }
+}
+
+@media (min-width: 681px) {
+  .bottom-tabs { display: none; }
+  .mobile-back-btn { display: none; }
+}
+
+/* ── GRIND GAUGE ── */
+.grind-block { margin-bottom: clamp(20px, 1.8vw, 36px); max-width: 640px; }
+.grind-info-row {
+  display: flex; align-items: baseline; gap: clamp(10px, 1vw, 20px);
+  margin-bottom: clamp(10px, 0.9vw, 18px); flex-wrap: wrap;
+}
+.grind-name { font-size: var(--tx-lg); font-weight: 400; color: var(--white); }
+.grind-mm { font-family: 'IBM Plex Mono', monospace; font-size: var(--tx-sm); color: var(--mid); }
+.grind-scale-track {
+  height: 5px; background: var(--line); position: relative;
+  margin-bottom: 10px;
+}
+.grind-scale-fill {
+  position: absolute; left: 0; top: 0; height: 100%;
+  background: var(--white); transition: width 0.4s ease;
+}
+.grind-needle {
+  position: absolute; top: -5px; width: 2px; height: 15px;
+  background: var(--white); transform: translateX(-50%); transition: left 0.4s ease;
+}
+.grind-tick-labels {
+  display: flex; justify-content: space-between; margin-top: 6px;
+}
+.grind-tick-labels span {
+  font-family: 'IBM Plex Mono', monospace; font-size: var(--tx-xs);
+  color: var(--line-light); font-size: clamp(8px, 0.52vw, 10px);
+}
+.particle-row {
+  display: flex; flex-direction: column; gap: clamp(8px, 0.7vw, 14px);
+  margin: clamp(10px, 0.9vw, 18px) 0 clamp(6px, 0.5vw, 10px);
+}
+.particle-cluster-box {
+  background: var(--faint);
+  border: 1px solid var(--line);
+  padding: clamp(10px, 1vw, 18px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.particle-cluster-box svg { display: block; }
+.particle-label {
+  font-family: 'IBM Plex Mono', monospace; font-size: var(--tx-xs); color: var(--mid);
+  text-align: center;
+}
+.grind-detail {
+  font-size: var(--tx-sm); color: #777; line-height: 1.7;
+  margin-top: clamp(4px, 0.3vw, 8px);
+}
+
+/* ── FLAVOR TAGS ── */
+.flavor-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: var(--sp-lg);
+}
+.flavor-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 11px;
+  border: 1px solid var(--line-light);
+  color: var(--white);
+  background: var(--faint);
+}
+.ri-flavor-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.ri-flavor-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: clamp(8px, 0.5vw, 10px);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mid);
+}
+.ri-flavor-tag::after { content: " ·"; color: var(--line-light); }
+.ri-flavor-tag:last-child::after { content: ""; }
+
+.flavor-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.flavor-chip {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: var(--tx-xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 7px 13px;
+  border: 1px solid var(--line-light);
+  background: var(--faint);
+  color: var(--mid);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.flavor-chip:hover { border-color: var(--white); color: var(--white); }
+.flavor-chip.selected {
+  background: var(--white);
+  border-color: var(--white);
+  color: var(--black);
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="wordmark">Pour <span>/ Filter Coffee</span></div>
+    <nav class="header-nav">
+      <button class="hn-btn active" onclick="switchTo('recipes')">Recipes</button>
+      <button class="hn-btn" onclick="switchTo('timer')">Timer</button>
+      <button class="hn-btn" onclick="switchTo('add')">+ Add</button>
+    </nav>
+    <button class="header-add-fab" onclick="switchTo('add')" aria-label="Add recipe" title="Add recipe">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--white)" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </header>
+
+  <!-- RECIPES -->
+  <div class="panel active" id="recipes-panel">
+    <div class="sidebar">
+      <div class="sidebar-search">
+        <input type="text" id="search-input" placeholder="Search recipes…" oninput="renderSidebar()">
+      </div>
+      <div class="sidebar-scroll" id="sidebar-scroll"></div>
+    </div>
+    <div class="detail-pane" id="detail-pane">
+      <button class="mobile-back-btn" onclick="closeDetailMobile()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+        All recipes
+      </button>
+      <div class="empty-state">
+        <p>Select a recipe to see the full pour schedule and brew notes.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIMER -->
+  <div class="panel" id="timer-panel">
+    <div id="timer-content" style="width:100%;display:flex;align-items:center;justify-content:center;padding:40px 24px;">
+      <div class="empty-state" style="align-items:center;text-align:center;">
+        <p>Open a recipe and tap <strong style="color:var(--white)">Brew this</strong> to start the guided timer.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD RECIPE -->
+  <div class="panel" id="add-panel">
+    <div class="add-form-wrap">
+      <div class="form-title" id="form-title">Add your recipe</div>
+
+      <div class="form-section-label">Recipe info</div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Recipe name</label>
+          <input class="form-input" id="f-name" placeholder="e.g. My Morning V60" type="text">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Dripper</label>
+          <select class="form-select" id="f-dripper">
+            <option value="V60">V60</option>
+            <option value="Chemex">Chemex</option>
+            <option value="Kalita Wave">Kalita Wave</option>
+            <option value="Origami">Origami</option>
+            <option value="CAFEC Flower">CAFEC Flower</option>
+            <option value="Bee House">Bee House</option>
+            <option value="Orea V3">Orea V3</option>
+            <option value="Clever Dripper">Clever Dripper</option>
+            <option value="Aeropress">Aeropress</option>
+            <option value="Melodrip">Melodrip</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Author / Barista</label>
+          <input class="form-input" id="f-author" placeholder="e.g. James Hoffmann" type="text">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Origin / Competition</label>
+          <input class="form-input" id="f-origin" placeholder="e.g. WBrC 2024" type="text">
+        </div>
+      </div>
+
+      <div class="form-section-label">Brew parameters</div>
+      <div class="form-row triple">
+        <div class="form-field">
+          <label class="form-label">Coffee (g)</label>
+          <input class="form-input" id="f-coffee" type="number" min="1" step="0.1" placeholder="15" oninput="handleRatioInput()">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Ratio (1:x)</label>
+          <input class="form-input" id="f-ratio" type="number" min="1" step="0.1" placeholder="16.5" oninput="handleRatioInput()">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Water (g)</label>
+          <input class="form-input" id="f-water" type="number" min="1" step="1" placeholder="250" oninput="handleWaterInput()">
+        </div>
+      </div>
+      <div class="ratio-hint-row">
+        <span class="form-hint" id="ratio-hint">Enter coffee + ratio and water fills in automatically — or type water directly to set ratio.</span>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Temp (°C)</label>
+          <input class="form-input" id="f-temp" type="number" min="60" max="100" placeholder="93">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Grind size</label>
+          <select class="form-select" id="f-grind">
+            <option value="">Select grind size…</option>
+            <option value="Extra Fine">Extra Fine</option>
+            <option value="Fine">Fine</option>
+            <option value="Medium-fine">Medium-fine</option>
+            <option value="Medium">Medium</option>
+            <option value="Medium-coarse">Medium-coarse</option>
+            <option value="Coarse">Coarse</option>
+            <option value="Extra Coarse">Extra Coarse</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Total brew time</label>
+          <input class="form-input" id="f-time" placeholder="e.g. 3:00" type="text">
+          <span class="form-hint">Format: m:ss</span>
+        </div>
+      </div>
+
+      <div class="form-section-label">Flavour profile</div>
+      <div class="form-row single">
+        <div class="form-field">
+          <div class="flavor-picker" id="flavor-picker">
+            ${['Bright','Sweet','Syrupy','Smooth','Clean','Fruity','Floral','Balanced','Heavy body','Low acidity','Dense','Delicate','Strong','Mild','Vivid','Rounded'].map(t => `<button type="button" class="flavor-chip" data-tag="${t}" onclick="toggleFlavorTag('${t}')">${t}</button>`).join('')}
+          </div>
+          <span class="form-hint">Tap to select up to 4 tags</span>
+        </div>
+      </div>
+
+      <div class="form-section-label">Notes</div>
+      <div class="form-row single">
+        <div class="form-field">
+          <textarea class="form-textarea" id="f-notes" placeholder="Technique, bean suggestions, tasting notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="form-section-label">Pour schedule</div>
+      <div class="form-row" style="grid-template-columns:64px 1fr 64px 32px; gap:8px; margin-bottom:6px;">
+        <span class="form-label" style="padding-left:4px">Time</span>
+        <span class="form-label">Description</span>
+        <span class="form-label">Pour (g)</span>
+        <span></span>
+      </div>
+      <div class="steps-editor" id="steps-editor"></div>
+      <button class="btn-add-step" onclick="addStepRow()">+ Add pour step</button>
+
+      <div class="form-actions">
+        <button class="btn-primary" onclick="saveRecipe()">Save recipe</button>
+        <button class="btn-secondary" id="cancel-edit-btn" style="display:none" onclick="cancelEdit()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Mobile bottom tab bar -->
+<nav class="bottom-tabs" id="bottom-tabs">
+  <button class="bt-btn bt-tab-recipes active" onclick="switchTo('recipes')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    <span class="bt-label">Recipes</span>
+  </button>
+  <button class="bt-btn bt-add-btn bt-tab-add" onclick="switchTo('add')">
+    <div class="bt-icon-circle">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>
+    </div>
+    <span class="bt-label">Add</span>
+  </button>
+  <button class="bt-btn bt-tab-timer" onclick="switchTo('timer')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+    <span class="bt-label">Timer</span>
+  </button>
+</nav>
+
+<!-- Confirm modal -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Delete recipe?</div>
+    <div class="modal-body" id="modal-body">This cannot be undone.</div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="modal-confirm-btn">Delete</button>
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════
+//  GRIND DATA
+// ══════════════════════════════════
+const GRIND_DATA = {
+  'Extra Fine':    { mmMin:0.10, mmMax:0.20, mmAvg:0.15, pct:4,  count:55, desc:'Powdery — like fine flour. Used for Turkish coffee only. Too fine for any filter method; will clog paper instantly and produce over-extracted, bitter results.' },
+  'Fine':          { mmMin:0.20, mmMax:0.40, mmAvg:0.30, pct:18, count:42, desc:'Sand-like with no distinct grit. Used for espresso and Moka pot. Sits at the very edge of usability for Aeropress. Will choke most filter drippers and cause astringency.' },
+  'Medium-fine':   { mmMin:0.40, mmMax:0.60, mmAvg:0.50, pct:34, count:32, desc:'Finer than table salt. The sweet spot for V60 and Aeropress. Maximises extraction rate to compensate for the V60\'s fast drawdown — produces a bright, clean, high-clarity cup.' },
+  'Medium':        { mmMin:0.50, mmMax:0.75, mmAvg:0.62, pct:50, count:26, desc:'Coarse sea salt texture. Works across most filter methods — V60, Origami, Kalita Wave. The universal reference point; most dial-in processes start here before adjusting finer or coarser.' },
+  'Medium-coarse': { mmMin:0.75, mmMax:1.00, mmAvg:0.87, pct:65, count:19, desc:'Rough kosher salt. Ideal for Chemex, Clever Dripper, and flat-bed brewers. Slows extraction to compensate for longer contact time — produces a smooth, balanced cup with less bitterness risk.' },
+  'Coarse':        { mmMin:1.00, mmMax:1.50, mmAvg:1.25, pct:80, count:13, desc:'Large, distinct gritty pieces. Best for French Press and cold brew. Too coarse for filter methods — water passes through too quickly, resulting in under-extracted, sour, thin brews.' },
+  'Extra Coarse':  { mmMin:1.50, mmMax:2.00, mmAvg:1.75, pct:95, count:9,  desc:'Chunky, like cracked peppercorns. Cold brew and cowboy coffee only. No filter paper can hold enough water contact time at this size to extract properly.' }
+};
+
+// Seeded pseudo-random so the cluster looks the same every time for a given grind
+function seededRandom(seed) {
+  let s = seed;
+  return function() {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+}
+
+// Generates a slightly-irregular blob path so particles read as "ground coffee" rather than perfect circles,
+// but with gentle, consistent wobble (not chaotic) for a clean, uniform look.
+function irregularBlobPath(cx, cy, r, rand) {
+  const points = 9;
+  const angleStep = (Math.PI * 2) / points;
+  const coords = [];
+  for (let i = 0; i < points; i++) {
+    const angle = i * angleStep;
+    const wobble = 0.88 + rand() * 0.24; // 0.88–1.12x — subtle, consistent variation
+    const px = cx + Math.cos(angle) * r * wobble;
+    const py = cy + Math.sin(angle) * r * wobble;
+    coords.push([px, py]);
+  }
+  let path = `M ${coords[0][0].toFixed(1)} ${coords[0][1].toFixed(1)} `;
+  for (let i = 1; i <= points; i++) {
+    const cur = coords[i % points];
+    const prev = coords[(i - 1) % points];
+    const mx = (prev[0] + cur[0]) / 2;
+    const my = (prev[1] + cur[1]) / 2;
+    path += `Q ${prev[0].toFixed(1)} ${prev[1].toFixed(1)} ${mx.toFixed(1)} ${my.toFixed(1)} `;
+  }
+  path += 'Z';
+  return path;
+}
+
+// Builds an SVG showing a uniform, evenly-spaced row of particles at true relative scale,
+// plus a single reference grain of table salt for comparison. Every particle in the row
+// is drawn at the same average size for that grind — clean and easy to compare at a glance.
+function renderParticleCluster(grindKey) {
+  const g = GRIND_DATA[grindKey];
+  const W = 320, H = 130;
+  const pxPerMm = 60; // scale: 1mm = 60px — consistent across all grind levels for true comparison
+  const rand = seededRandom(grindKey.length * 37 + 11);
+
+  const rowCount = 6;
+  const r = (g.mmAvg / 2) * pxPerMm;
+  const usableWidth = W - 130; // leave room for divider + salt reference
+  const spacing = usableWidth / rowCount;
+  const cy = H / 2;
+
+  const particlesSvg = Array.from({ length: rowCount }, (_, i) => {
+    const cx = spacing * i + spacing / 2 + 14;
+    return `<path d="${irregularBlobPath(cx, cy, r, rand)}" fill="var(--white)" opacity="0.92"/>`;
+  }).join('');
+
+  // Reference grain: table salt ~0.45mm, drawn at the same px-per-mm scale, off to the right
+  const saltR = (0.45 / 2) * pxPerMm;
+  const saltCx = W - 60, saltCy = H / 2;
+  const saltPath = irregularBlobPath(saltCx, saltCy, saltR, seededRandom(7));
+
+  return `
+    <div class="particle-cluster-box">
+      <svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+        <line x1="${W-105}" y1="10" x2="${W-105}" y2="${H-10}" stroke="var(--line-light)" stroke-width="1" stroke-dasharray="2,3"/>
+        ${particlesSvg}
+        <path d="${saltPath}" fill="var(--mid)" opacity="0.9"/>
+        <text x="${saltCx}" y="${H-6}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" fill="var(--mid)">salt</text>
+      </svg>
+    </div>
+  `;
+}
+
+function renderGrindGauge(grindKey) {
+  const g = GRIND_DATA[grindKey];
+  if (!g) return '';
+  return `
+    <div class="grind-block">
+      <div class="section-label">Grind size</div>
+      <div class="grind-info-row">
+        <span class="grind-name">${grindKey}</span>
+        <span class="grind-mm">${g.mmMin}&ndash;${g.mmMax} mm particle diameter</span>
+      </div>
+      <div class="grind-scale-track">
+        <div class="grind-scale-fill" style="width:${g.pct}%"></div>
+        <div class="grind-needle" style="left:${g.pct}%"></div>
+      </div>
+      <div class="grind-tick-labels">
+        <span>Extra Fine</span><span>Fine</span><span>Medium</span><span>Coarse</span><span>Extra Coarse</span>
+      </div>
+      <div class="particle-row">
+        ${renderParticleCluster(grindKey)}
+        <span class="particle-label">Average particle size at true relative scale &mdash; grey grain on the right is table salt (~0.45mm) for comparison</span>
+      </div>
+      <p class="grind-detail">${g.desc}</p>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════
+//  DATA
+// ══════════════════════════════════
+const CHAMPION_RECIPES = [
+  {
+    id: "champ-1", user: false,
+    flavor: ["Balanced", "Sweet", "Clean", "Adjustable"],
+    year: "2024", origin: "WBrC World Champion",
+    author: "Tetsu Kasuya", country: "Japan",
+    dripper: "V60",
+    name: "4:6 Method",
+    coffee: 20, water: 300, temp: 93,
+    grind: "Medium-coarse",
+    totalTime: "3:30", totalTimeSec: 210,
+    notes: "Tetsu Kasuya's method divides the brew into two parts: the first 40% of water controls taste (sweetness vs acidity), and the second 60% controls strength. By adjusting individual pour sizes within these sections, you can dial in your preferred cup profile without changing grind size. Pour in 5 equal pulses of 60g each.",
+    steps: [
+      { at: "0:00", atSec: 0, desc: "1st pour — sets acidity", pour: 60, total: 60 },
+      { at: "0:45", atSec: 45, desc: "2nd pour — completes taste phase", pour: 60, total: 120 },
+      { at: "1:30", atSec: 90, desc: "3rd pour — begins strength phase", pour: 60, total: 180 },
+      { at: "2:00", atSec: 120, desc: "4th pour", pour: 60, total: 240 },
+      { at: "2:30", atSec: 150, desc: "5th pour — final", pour: 60, total: 300 },
+    ]
+  },
+  {
+    id: "champ-2", user: false,
+    flavor: ["Bright", "Sweet", "Clear", "Floral"],
+    year: "2023", origin: "WBrC World Champion",
+    author: "Patrik Rolf", country: "Sweden",
+    dripper: "V60",
+    name: "Patrik Rolf V60",
+    coffee: 15, water: 250, temp: 96,
+    grind: "Medium",
+    totalTime: "3:00", totalTimeSec: 180,
+    notes: "Patrik Rolf's 2023 winning routine emphasised clarity and sweetness through precise temperature control and a gentle bloom with agitation. His technique uses continuous swirling during the bloom to ensure even saturation, then settles into deliberate pulse pours.",
+    steps: [
+      { at: "0:00", atSec: 0, desc: "Bloom — saturate all grounds, gentle swirl", pour: 45, total: 45 },
+      { at: "0:40", atSec: 40, desc: "Main pour — slow spiral from centre", pour: 100, total: 145 },
+      { at: "1:20", atSec: 80, desc: "Second pour — outer ring inward", pour: 60, total: 205 },
+      { at: "2:00", atSec: 120, desc: "Final pour — gentle, avoid edges", pour: 45, total: 250 },
+    ]
+  },
+  {
+    id: "champ-3", user: false,
+    flavor: ["Sweet", "Syrupy", "Smooth", "Low acidity"],
+    year: "2022", origin: "WBrC World Champion",
+    author: "Hugh Kelly", country: "Australia",
+    dripper: "V60",
+    name: "Hugh Kelly V60",
+    coffee: 15, water: 250, temp: 94,
+    grind: "Medium-fine",
+    totalTime: "3:00", totalTimeSec: 180,
+    notes: "Hugh Kelly's winning brew focused on maximising sweetness through careful bloom management and a turbulence-free final pour. He uses a gooseneck with near-zero agitation on the last step to produce a clean, syrupy mouthfeel characteristic of Australian specialty culture.",
+    steps: [
+      { at: "0:00", atSec: 0, desc: "Bloom — all grounds saturated", pour: 50, total: 50 },
+      { at: "0:45", atSec: 45, desc: "Main pour — spiral from centre", pour: 120, total: 170 },
+      { at: "1:45", atSec: 105, desc: "Second pour — slow, no turbulence", pour: 50, total: 220 },
+      { at: "2:20", atSec: 140, desc: "Final pour — straight to centre only", pour: 30, total: 250 },
+    ]
+  },
+  {
+    id: "champ-4", user: false,
+    flavor: ["Consistent", "Clean", "Balanced", "Mild"],
+    year: "2019", origin: "WBrC World Champion",
+    author: "Emi Fukahori", country: "Switzerland",
+    dripper: "V60",
+    name: "Emi's Two-Cup Method",
+    coffee: 20, water: 300, temp: 93,
+    grind: "Medium",
+    totalTime: "3:00", totalTimeSec: 180,
+    notes: "Emi Fukahori brewed two identical V60 cups simultaneously for judges, demonstrating extreme consistency. Her method uses a measured bloom followed by two large pours with deliberate resting phases. The waiting periods between pours affects extraction evenness and cup clarity.",
+    steps: [
+      { at: "0:00", atSec: 0, desc: "Bloom pour — thorough saturation", pour: 60, total: 60 },
+      { at: "0:30", atSec: 30, desc: "Wait — let bloom settle fully", pour: 0, total: 60 },
+      { at: "1:00", atSec: 60, desc: "Main pour — large spiral pour", pour: 140, total: 200 },
+      { at: "1:45", atSec: 105, desc: "Final pour — gentle, circular", pour: 100, total: 300 },
+    ]
+  },
+  {
+    id: "champ-5", user: false,
+    flavor: ["Clean", "Tea-like", "Delicate", "Bright"],
+    year: "2018", origin: "WBrC World Champion",
+    author: "Lex Wenneker", country: "Netherlands",
+    dripper: "Chemex",
+    name: "The Lex Chemex",
+    coffee: 30, water: 500, temp: 95,
+    grind: "Medium-coarse",
+    totalTime: "4:30", totalTimeSec: 270,
+    notes: "Lex Wenneker's Chemex recipe uses the thick paper filter to produce an exceptionally clean, tea-like cup. The longer brew time allows careful flavour separation. He uses a higher water temperature than usual for Chemex to compensate for heat loss through the thick glass carafe.",
+    steps: [
+      { at: "0:00", atSec: 0, desc: "Pre-wet filter — discard water", pour: 0, total: 0 },
+      { at: "0:15", atSec: 15, desc: "Bloom — saturate grounds, wait 45s", pour: 90, total: 90 },
+      { at: "1:00", atSec: 60, desc: "First main pour — slow spiral", pour: 150, total: 240 },
+      { at: "2:15", atSec: 135, desc: "Second pour — steady stream", pour: 150, total: 390 },
+      { at: "3:30", atSec: 210, desc: "Final pour", pour: 110, total: 500 },
+    ]
+  },
+  {
+    id: "champ-6", user: false,
+    flavor: ["Sweet", "Fruity", "Dense", "Vivid"],
+    year: "2017", origin: "WBrC World Champion",
+    author: "Wang Szu-Yu", country: "Taiwan",
+    dripper: "V60",
+    name: "Wang's Precision Pour",
+    coffee: 15, water: 225, temp: 90,
+    grind: "Medium-fine",
+    totalTime: "2:30", totalTimeSec: 150,
+    notes: "Wang Szu-Yu won with a lower-than-usual brew temperature to highlight the natural sweetness of her chosen Taiwanese high-altitude coffee. The shorter brew time and concentrated recipe produces a dense, sweet cup with vivid fruit notes. Works especially well with naturally processed or anaerobic coffees.",
+    steps: [
+      { at: "0:00", atSec: 0, desc: "Bloom — quick saturation, 30s rest", pour: 45, total: 45 },
+      { at: "0:30", atSec: 30, desc: "Main pour — fast, higher agitation", pour: 120, total: 165 },
+      { at: "1:20", atSec: 80, desc: "Final pour — straight down, centre", pour: 60, total: 225 },
+    ]
+  },
+  {
+    id: "champ-7", user: false,
+    flavor: ["Balanced", "Smooth", "Rounded", "Approachable"],
+    year: "2016", origin: "WBrC World Champion",
+    author: "Odd-Steinar Tollefsen", country: "Norway",
+    dripper: "Kalita Wave",
+    name: "Tollefsen Kalita",
+    coffee: 18, water: 300, temp: 94,
+    grind: "Medium",
+    totalTime: "3:30", totalTimeSec: 210,
+    notes: "Odd-Steinar Tollefsen's 2016 technique leverages the flat-bed extraction of the Kalita Wave for an even, balanced cup with lower risk of channelling. His approach uses a slow, continuous pour rather than aggressive pulses, letting the flat filter bed regulate contact time naturally.",
+    steps: [
+      { at: "0:00", atSec: 0, desc: "Bloom — all grounds wet, 30s", pour: 54, total: 54 },
+      { at: "0:30", atSec: 30, desc: "Slow continuous pour — centre outward", pour: 100, total: 154 },
+      { at: "1:30", atSec: 90, desc: "Continue slow pour", pour: 80, total: 234 },
+      { at: "2:15", atSec: 135, desc: "Final pour — steady, no swirl", pour: 66, total: 300 },
+    ]
+  },
+  {
+    id: "champ-8", user: false,
+    flavor: ["Sweet", "Floral", "Light", "Clean"],
+    year: "2015", origin: "WBrC World Champion",
+    author: "Hidenori Izaki", country: "Japan",
+    dripper: "Origami",
+    name: "Izaki Origami",
+    coffee: 16, water: 250, temp: 92,
+    grind: "Medium",
+    totalTime: "3:00", totalTimeSec: 180,
+    notes: "Hidenori Izaki's Origami recipe is notable for its three-phase structure: a prolonged bloom, a single large middle pour, and a restrained finish. The Origami dripper's ridged walls allow faster drawdown than a V60, so the bloom phase does more flavour-development work. He recommends Ethiopian or Colombian light roasts.",
+    steps: [
+      { at: "0:00", atSec: 0, desc: "Bloom — saturate, wait 50s", pour: 50, total: 50 },
+      { at: "0:50", atSec: 50, desc: "Main pour — steady spiral", pour: 140, total: 190 },
+      { at: "2:00", atSec: 120, desc: "Final pour — gentle", pour: 60, total: 250 },
+    ]
+  },
+  {
+    id: "champ-9", user: false,
+    flavor: ["Syrupy", "Sweet", "Heavy body", "Low bitterness"],
+    year: "2026", origin: "Tetsu Kasuya — 10th Anniversary",
+    author: "Tetsu Kasuya", country: "Japan",
+    dripper: "V60",
+    name: "Multi-Pour Method (10 Pours)",
+    coffee: 20, water: 300, temp: 96,
+    grind: "Extra Coarse",
+    totalTime: "3:30", totalTimeSec: 210,
+    notes: "Tetsu Kasuya's 2026 recipe — his self-described best ever — throws out the conventional wisdom of 2–3 pours and replaces it with 10 pours of 30g each at an absurdly coarse grind (Comandante C40 at 40–45 clicks). The high temperature (95–96°C) is essential to drive extraction through the coarse bed. The payoff is extraordinary body, syrupy sweetness, and almost zero bitterness. Best with light to medium-light single origins. Dark roasts will taste scorched. Let each pour drain fully before the next — never let water pool. After the 30-second bloom, it is one pour every 15 seconds.",
+    steps: [
+      { at: "0:00", atSec: 0,   desc: "Pour 1 — bloom, saturate all grounds", pour: 30, total: 30 },
+      { at: "0:30", atSec: 30,  desc: "Pour 2 — first extraction pour", pour: 30, total: 60 },
+      { at: "0:45", atSec: 45,  desc: "Pour 3", pour: 30, total: 90 },
+      { at: "1:00", atSec: 60,  desc: "Pour 4", pour: 30, total: 120 },
+      { at: "1:15", atSec: 75,  desc: "Pour 5 — halfway", pour: 30, total: 150 },
+      { at: "1:30", atSec: 90,  desc: "Pour 6", pour: 30, total: 180 },
+      { at: "1:45", atSec: 105, desc: "Pour 7", pour: 30, total: 210 },
+      { at: "2:00", atSec: 120, desc: "Pour 8", pour: 30, total: 240 },
+      { at: "2:15", atSec: 135, desc: "Pour 9", pour: 30, total: 270 },
+      { at: "2:30", atSec: 150, desc: "Pour 10 — final", pour: 30, total: 300 },
+    ]
+  },
+  {
+    id: "champ-10", user: false,
+    flavor: ["Sweet", "Smooth", "Full body", "Low bitterness"],
+    year: "2025", origin: "Tetsu Kasuya — Hario Switch",
+    author: "Tetsu Kasuya", country: "Japan",
+    dripper: "Clever Dripper",
+    name: "New Hybrid Switch Method",
+    coffee: 20, water: 300, temp: 96,
+    grind: "Medium-coarse",
+    totalTime: "3:30", totalTimeSec: 210,
+    notes: "An evolution of Kasuya's 'Devil' Switch recipe. Uses the Hario Switch's immersion-to-percolation switching to combine the clarity of pour-over with the body of immersion. The first two pours mirror the 4:6 method's taste-control phase. Then the switch is closed for a brief full-immersion phase at a drastically reduced water temperature (70–80°C), drawing out sweetness while suppressing bitterness. Requires a Hario Switch or Clever Dripper. The cold water addition mid-brew is deliberate — add it directly to your kettle.",
+    steps: [
+      { at: "0:00", atSec: 0,   desc: "Switch closed — bloom pour", pour: 45, total: 45 },
+      { at: "0:10", atSec: 10,  desc: "Wait — immersion bloom", pour: 0, total: 45 },
+      { at: "0:35", atSec: 35,  desc: "Open switch — begin drawdown", pour: 0, total: 45 },
+      { at: "0:40", atSec: 40,  desc: "Pour to 120g — taste phase", pour: 75, total: 120 },
+      { at: "0:50", atSec: 50,  desc: "Wait for drawdown", pour: 0, total: 120 },
+      { at: "1:30", atSec: 90,  desc: "Pour to 200g — add cold water to kettle (target 70–80°C)", pour: 80, total: 200 },
+      { at: "2:05", atSec: 125, desc: "Close switch", pour: 0, total: 200 },
+      { at: "2:10", atSec: 130, desc: "Pour to 300g — full immersion at low temp", pour: 100, total: 300 },
+      { at: "2:20", atSec: 140, desc: "Wait — immersion phase", pour: 0, total: 300 },
+      { at: "2:45", atSec: 165, desc: "Open switch — final drawdown", pour: 0, total: 300 },
+    ]
+  },
+  {
+    id: "champ-11", user: false,
+    flavor: ["Balanced", "Clean", "Consistent", "Strong"],
+    year: "2007", origin: "World Barista Champion / Author",
+    author: "James Hoffmann", country: "UK",
+    dripper: "V60",
+    name: "Ultimate V60 Technique",
+    coffee: 30, water: 500, temp: 99,
+    grind: "Medium-fine",
+    totalTime: "3:30", totalTimeSec: 210,
+    notes: "James Hoffmann's definitive V60 method prioritises consistency and even extraction above all else. The key innovations: a well in the centre of the coffee bed before the bloom to ensure even saturation, aggressive swirling (not stirring) to mix grounds evenly, two large continuous pours rather than many small pulses, a gentle two-direction stir at the end to dislodge grounds from the filter paper, and a final swirl to produce a flat coffee bed for even drawdown. Use near-boiling water (99°C or just off the boil). Makes 2 cups.",
+    steps: [
+      { at: "0:00", atSec: 0,   desc: "Bloom — 60g into centre well, immediately swirl", pour: 60, total: 60 },
+      { at: "0:10", atSec: 10,  desc: "Swirl brewer until slurry is even", pour: 0, total: 60 },
+      { at: "0:45", atSec: 45,  desc: "First main pour — spiral to 300g", pour: 240, total: 300 },
+      { at: "1:15", atSec: 75,  desc: "Second pour — slow and gentle to 500g", pour: 200, total: 500 },
+      { at: "1:45", atSec: 105, desc: "Stir once clockwise, once counter-clockwise", pour: 0, total: 500 },
+      { at: "1:55", atSec: 115, desc: "Swirl brewer gently to flatten coffee bed", pour: 0, total: 500 },
+    ]
+  },
+  {
+    id: "champ-12", user: false,
+    flavor: ["Fruity", "Floral", "Dense", "Delicate"],
+    year: "2021", origin: "WBrC World Champion",
+    author: "Aida Batlle", country: "El Salvador",
+    dripper: "Chemex",
+    name: "Aida Batlle Chemex",
+    coffee: 42, water: 700, temp: 94,
+    grind: "Medium-coarse",
+    totalTime: "5:00", totalTimeSec: 300,
+    notes: "Aida Batlle, renowned producer and five-time Cup of Excellence winner, uses the Chemex to showcase her naturally processed El Salvador coffees. Her method uses a high coffee-to-water ratio for clarity and density, with an unusually long bloom to ensure full degassing of freshly roasted beans. The slow, low-agitation pours preserve the delicate floral and fruit notes that naturally processed coffees are known for. Ideal for washed or natural light roasts.",
+    steps: [
+      { at: "0:00", atSec: 0,   desc: "Pre-wet filter — discard water, keep server warm", pour: 0, total: 0 },
+      { at: "0:15", atSec: 15,  desc: "Bloom — saturate evenly, 45s rest", pour: 84, total: 84 },
+      { at: "1:00", atSec: 60,  desc: "First pour — slow spiral from centre", pour: 196, total: 280 },
+      { at: "2:15", atSec: 135, desc: "Second pour — steady stream, low agitation", pour: 210, total: 490 },
+      { at: "3:30", atSec: 210, desc: "Final pour — gentle centre pour", pour: 210, total: 700 },
+    ]
+  },
+  {
+    id: "champ-13", user: false,
+    flavor: ["Sweet", "Clean", "Mild", "Balanced"],
+    year: "1908 design", origin: "Classic Japanese Brewer",
+    author: "Stumptown Coffee", country: "Japan / USA",
+    dripper: "Bee House",
+    name: "Bee House Standard Pour",
+    coffee: 22, water: 370, temp: 94,
+    grind: "Medium-coarse",
+    totalTime: "3:00", totalTimeSec: 180,
+    notes: "The Bee House is a Japanese ceramic update on the original Melitta cone, prized for being forgiving and producing a clean, sweet, low-fuss cup — often called the gateway pour-over. Its restricted single hole slows the flow naturally, so technique matters less than with a V60. This recipe follows Stumptown's standard guide using a 1:16.8 ratio. Use a #2 or #4 Melitta-style filter. Pour over the darker, drier patches of the coffee bed and avoid the lighter wet spots to keep extraction even.",
+    steps: [
+      { at: "0:00", atSec: 0,   desc: "Bloom — saturate grounds, stir gently to break clumps", pour: 40, total: 40 },
+      { at: "0:30", atSec: 30,  desc: "Wait — let bloom rise and bubble", pour: 0, total: 40 },
+      { at: "1:00", atSec: 60,  desc: "Spiral pour — fill toward 380g", pour: 340, total: 380 },
+      { at: "2:00", atSec: 120, desc: "Wait for drawdown to finish", pour: 0, total: 380 },
+    ]
+  },
+  {
+    id: "champ-14", user: false,
+    flavor: ["Sweet", "Clean", "Bright", "High clarity"],
+    year: "2019 / 2021", origin: "Japan Brewers Cup Champion",
+    author: "Daiki Hatakeyama", country: "Japan",
+    dripper: "CAFEC Flower",
+    name: "Flower Dripper Standard Recipe",
+    coffee: 15, water: 240, temp: 92,
+    grind: "Medium",
+    totalTime: "2:40", totalTimeSec: 160,
+    notes: "The CAFEC Flower Dripper became famous after Daiki Hatakeyama used it to win the 2019 Japan Brewers Cup, then took runner-up at the 2021 World Brewers Cup with the same brewer. Its petal-shaped ridges hold the filter paper away from the dripper wall, creating an air gap that lets the coffee bed expand fully — similar to a nel (cloth) drip — for a deep filtering layer and faster flow. Because of that faster flow, you can grind a touch finer than you would on a V60 and still avoid clogging, which boosts sweetness and clarity. This version follows Cata Coffee's standard two-pour recipe.",
+    steps: [
+      { at: "0:00", atSec: 0,   desc: "Bloom — saturate fully", pour: 30, total: 30 },
+      { at: "0:30", atSec: 30,  desc: "Wait — let bloom finish", pour: 0, total: 30 },
+      { at: "1:00", atSec: 60,  desc: "First pour — centre outward, slow spiral", pour: 95, total: 125 },
+      { at: "1:40", atSec: 100, desc: "Second pour — gentle, finish to 240g", pour: 115, total: 240 },
+    ]
+  },
+  {
+    id: "champ-15", user: false,
+    flavor: ["Bright", "Clean", "Complex", "Balanced"],
+    year: "Classic", origin: "Hario — Brand Standard",
+    author: "Hario", country: "Japan",
+    dripper: "V60",
+    name: "Hario Classic V60 (4-cup)",
+    coffee: 30, water: 500, temp: 95,
+    grind: "Medium-fine",
+    totalTime: "3:45", totalTimeSec: 225,
+    notes: "Hario's own standard guide for the V60 they invented and still manufacture. The spiral ribs and large single hole at the base were engineered specifically to let coffee escape through both the bottom and the sides of the bed, producing a balanced, even brew with full control over pour rate. This recipe scales for a 4-cup batch at a 1:16.7 ratio. The V60 rewards careful technique more than almost any other dripper — pour rate, water temperature, and grind size all matter more here than on more forgiving brewers like the Kalita Wave or Bee House.",
+    steps: [
+      { at: "0:00", atSec: 0,   desc: "Bloom — saturate all grounds evenly", pour: 60, total: 60 },
+      { at: "0:45", atSec: 45,  desc: "Wait — let bloom settle", pour: 0, total: 60 },
+      { at: "1:00", atSec: 60,  desc: "First pour — centre spiral outward", pour: 190, total: 250 },
+      { at: "2:00", atSec: 120, desc: "Second pour — steady, even stream", pour: 150, total: 400 },
+      { at: "2:45", atSec: 165, desc: "Final pour — gentle, finish to 500g", pour: 100, total: 500 },
+    ]
+  },
+  {
+    id: "champ-16", user: false,
+    flavor: ["High clarity", "Sweet", "Vivid", "Clean"],
+    year: "Brand Standard", origin: "Orea — Official Recipe",
+    author: "Orea", country: "Canada",
+    dripper: "Orea V3",
+    name: "Orea V3 Standard Recipe",
+    coffee: 18, water: 280, temp: 90,
+    grind: "Medium-coarse",
+    totalTime: "2:10", totalTimeSec: 130,
+    notes: "Orea's own published recipe for the V3, their fast-flowing nylon dripper that has become a favourite among home enthusiasts and competitive brewers for its huge drainage holes. Because water moves through so quickly, you can grind significantly finer than a V60 without the risk of stalling or channeling — this is what lets the V3 hit unusually high extraction yields while staying clean. Most people brew it with a Kalita Wave filter, though Orea also sells flat circular filters via their Negotiator tool for an even faster, higher-clarity cup. A gentle swirl after the bloom and again after the final pour helps knock down any floating bits and break up channels.",
+    steps: [
+      { at: "0:00", atSec: 0,   desc: "Bloom — pour in concentric circles, then swirl gently", pour: 80, total: 80 },
+      { at: "0:50", atSec: 50,  desc: "Second pour — low turbulence, concentric circle", pour: 80, total: 160 },
+      { at: "1:30", atSec: 90,  desc: "Final pour — concentric circle, shake gently to break channels", pour: 120, total: 280 },
+    ]
+  }
+];
+
+// ── STATE ──
+let selectedId = null;
+let editingId = null;
+let timerInterval = null;
+let timerElapsed = 0;
+let timerRunning = false;
+let timerRecipe = null;
+let stepCount = 1;
+
+function getUserRecipes() {
+  try { return JSON.parse(localStorage.getItem('pour_recipes') || '[]'); } catch { return []; }
+}
+function saveUserRecipes(arr) {
+  localStorage.setItem('pour_recipes', JSON.stringify(arr));
+}
+function getAllRecipes() {
+  return [...CHAMPION_RECIPES, ...getUserRecipes()];
+}
+
+// ── DRIPPER ORDER ──
+const DRIPPER_ORDER = ['V60','Chemex','Kalita Wave','Origami','CAFEC Flower','Bee House','Orea V3','Clever Dripper','Aeropress','Melodrip','Other'];
+
+// ══════════════════════════════════
+//  SIDEBAR
+// ══════════════════════════════════
+function renderSidebar() {
+  const q = (document.getElementById('search-input').value || '').toLowerCase();
+  const all = getAllRecipes();
+  const filtered = q ? all.filter(r =>
+    r.name.toLowerCase().includes(q) ||
+    r.author.toLowerCase().includes(q) ||
+    r.dripper.toLowerCase().includes(q)
+  ) : all;
+
+  // Group by dripper
+  const groups = {};
+  filtered.forEach(r => {
+    if (!groups[r.dripper]) groups[r.dripper] = [];
+    groups[r.dripper].push(r);
+  });
+
+  const orderedKeys = [
+    ...DRIPPER_ORDER.filter(d => groups[d]),
+    ...Object.keys(groups).filter(d => !DRIPPER_ORDER.includes(d))
+  ];
+
+  const el = document.getElementById('sidebar-scroll');
+  el.innerHTML = orderedKeys.map(dripper => {
+    const items = groups[dripper];
+    return `
+      <div class="dripper-group" id="dg-${dripper.replace(/\s/g,'_')}">
+        <div class="dripper-heading" onclick="toggleGroup('${dripper.replace(/\s/g,'_')}')">
+          <span class="dripper-heading-label">${dripper}</span>
+          <span class="dripper-count">${items.length}</span>
+          <span class="dripper-toggle">▾</span>
+        </div>
+        <div class="dripper-items">
+          ${items.map(r => `
+            <div class="recipe-item ${r.id === selectedId ? 'active' : ''}" onclick="selectRecipe('${r.id}')">
+              <div class="ri-title">${r.name}</div>
+              <div class="ri-sub">${r.author}${r.country ? ' · ' + r.country : ''}</div>
+              <div class="ri-meta">${r.coffee}g : ${r.water}g &nbsp;·&nbsp; 1:${(r.water/r.coffee).toFixed(0)} &nbsp;·&nbsp; ${r.totalTime}</div>
+              <div class="ri-badges">
+                ${r.year ? `<span class="ri-badge">${r.year}</span>` : ''}
+                ${r.user ? `<span class="ri-badge user-badge">My recipe</span>` : ''}
+              </div>
+              ${r.flavor && r.flavor.length ? `<div class="ri-flavor-row">${r.flavor.slice(0,3).map(f => `<span class="ri-flavor-tag">${f}</span>`).join('')}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('') || '<div style="padding:20px 16px;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--mid)">No recipes found.</div>';
+}
+
+function toggleGroup(key) {
+  const el = document.getElementById('dg-' + key);
+  if (el) el.classList.toggle('collapsed');
+}
+
+// ══════════════════════════════════
+//  DETAIL
+// ══════════════════════════════════
+function selectRecipe(id) {
+  selectedId = id;
+  renderSidebar();
+  const r = getAllRecipes().find(x => x.id === id);
+  if (!r) return;
+
+  const stepsHtml = r.steps.map(s => `
+    <tr>
+      <td class="td-at">${s.at}</td>
+      <td class="td-desc">${s.desc}</td>
+      <td class="td-pour">${s.pour > 0 ? '+' + s.pour + 'g' : '—'}</td>
+      <td class="td-total">${s.total > 0 ? s.total + 'g' : ''}</td>
+    </tr>
+  `).join('');
+
+  const userActions = r.user ? `
+    <button class="btn-secondary" onclick="editRecipe('${r.id}')">Edit</button>
+    <button class="btn-danger" onclick="confirmDelete('${r.id}')">Delete</button>
+  ` : '';
+
+  const grindKey = Object.keys(GRIND_DATA).find(k => r.grind && r.grind.toLowerCase() === k.toLowerCase()) || null;
+
+  document.getElementById('detail-pane').innerHTML = `
+    <button class="mobile-back-btn" onclick="closeDetailMobile()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      All recipes
+    </button>
+    <div class="dp-eyebrow">${r.dripper}${r.origin ? ' · ' + r.origin : ''}${r.year ? ' · ' + r.year : ''}</div>
+    <div class="dp-title">${r.name}</div>
+    <div class="dp-author">${r.author}${r.country ? ', ' + r.country : ''}</div>
+
+    <div class="stats-row">
+      <div class="stat-cell">
+        <div class="stat-label">Coffee</div>
+        <div class="stat-value">${r.coffee}<span class="stat-unit">g</span></div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Water</div>
+        <div class="stat-value">${r.water}<span class="stat-unit">g</span></div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Ratio</div>
+        <div class="stat-value">1<span class="stat-unit">:${(r.water/r.coffee).toFixed(0)}</span></div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Temp</div>
+        <div class="stat-value">${r.temp}<span class="stat-unit">°C</span></div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Time</div>
+        <div class="stat-value" style="font-size:var(--tx-lg);padding-top:2px">${r.totalTime}</div>
+      </div>
+    </div>
+
+    ${r.flavor && r.flavor.length ? `<div class="flavor-tags-row">${r.flavor.map(f => `<span class="flavor-tag">${f}</span>`).join('')}</div>` : ''}
+
+    ${r.notes ? `<div class="section-label">Notes</div><p class="dp-notes">${r.notes}</p>` : ''}
+
+    ${grindKey ? renderGrindGauge(grindKey) : (r.grind ? `<div class="section-label">Grind size</div><p class="dp-notes" style="margin-bottom:28px">${r.grind}</p>` : '')}
+
+    <div class="section-label">Pour schedule</div>
+    <table class="pour-table">
+      <thead><tr>
+        <th>At</th><th>Step</th><th>Pour</th><th>Total</th>
+      </tr></thead>
+      <tbody>${stepsHtml}</tbody>
+    </table>
+
+    <div class="dp-actions">
+      <button class="btn-primary" onclick="brewThis('${r.id}')">Brew this</button>
+      ${userActions}
+    </div>
+  `;
+
+  // On mobile, opening a recipe slides the detail pane in over the list
+  document.getElementById('recipes-panel').classList.add('detail-open');
+}
+
+function closeDetailMobile() {
+  document.getElementById('recipes-panel').classList.remove('detail-open');
+}
+
+// ══════════════════════════════════
+//  TIMER
+// ══════════════════════════════════
+let timerCountUp = false; // false = count down (default)
+
+function brewThis(id) {
+  const r = getAllRecipes().find(x => x.id === id);
+  if (!r) return;
+  timerRecipe = r;
+  timerElapsed = 0;
+  timerRunning = false;
+  if (timerInterval) clearInterval(timerInterval);
+  switchTo('timer');
+  renderTimer();
+}
+
+function toggleCountMode() {
+  timerCountUp = !timerCountUp;
+  renderTimer();
+}
+
+function renderTimer() {
+  const r = timerRecipe;
+  if (!r) return;
+
+  const C = 2 * Math.PI * 108;
+  const pct = Math.min(timerElapsed / r.totalTimeSec, 1);
+  // Arc fills forward for count-up, drains for count-down
+  const offset = timerCountUp ? C * (1 - pct) : C * pct;
+
+  // Display time: count up shows elapsed, count down shows remaining
+  const displaySec = timerCountUp
+    ? timerElapsed
+    : Math.max(0, r.totalTimeSec - timerElapsed);
+  const m = Math.floor(displaySec / 60);
+  const s = displaySec % 60;
+  const timeStr = `${m}:${String(s).padStart(2,'0')}`;
+
+  let cur = 0;
+  for (let i = 0; i < r.steps.length; i++) {
+    if (timerElapsed >= r.steps[i].atSec) cur = i;
+  }
+  const done = timerElapsed >= r.totalTimeSec;
+
+  const pouredSoFar = r.steps.slice(0, cur + 1).reduce((a, s) => a + s.pour, 0);
+  const pourPct = r.water > 0 ? Math.min(pouredSoFar / r.water * 100, 100) : 0;
+
+  const stepsHtml = r.steps.map((step, i) => {
+    const cls = i < cur ? 'done' : i === cur ? 'current' : '';
+    return `
+      <div class="ts-row ${cls}">
+        <span class="ts-at">${step.at}</span>
+        <span class="ts-desc">${step.desc}</span>
+        <span class="ts-pour">${step.pour > 0 ? '+' + step.pour + 'g' : '—'}</span>
+        <div class="ts-dot"></div>
+      </div>
+    `;
+  }).join('');
+
+  const curStep = r.steps[cur];
+  const phaseLabel = done ? 'Complete' : curStep.desc.split('—')[0].trim();
+  const actionLabel = done ? '✓' : (curStep.pour > 0 ? `Pour ${curStep.pour}g` : 'Wait');
+  const playLabel = timerRunning ? 'Pause' : (done ? 'Reset' : 'Start');
+  const modeLabel = timerCountUp ? '↑ Count up' : '↓ Count down';
+
+  document.getElementById('timer-content').innerHTML = `
+    <div class="timer-container">
+      <div class="timer-header">
+        <div class="timer-recipe-title">${r.name}</div>
+        <div class="timer-recipe-meta">${r.author} · ${r.dripper} · ${r.water}g water · ${r.coffee}g coffee</div>
+      </div>
+
+      <div class="clock-wrap">
+        <svg class="clock-svg" width="240" height="240" viewBox="0 0 240 240">
+          <circle class="clock-track" cx="120" cy="120" r="108"/>
+          <circle class="clock-arc"
+            cx="120" cy="120" r="108"
+            stroke-dasharray="${C}"
+            stroke-dashoffset="${offset}"
+            transform="rotate(-90 120 120)"
+            stroke="${done ? '#555' : 'var(--white)'}"/>
+        </svg>
+        <div class="clock-center">
+          <div class="clock-time-display">${done ? '✓' : timeStr}</div>
+          <div class="clock-step-label">${phaseLabel}</div>
+          <div class="clock-step-action">${actionLabel}</div>
+        </div>
+      </div>
+
+      <div class="timer-steps">${stepsHtml}</div>
+
+      <div class="timer-controls">
+        <button class="tctrl" onclick="resetTimer()">Reset</button>
+        <button class="tctrl tctrl-play" onclick="toggleTimer()">${playLabel}</button>
+        <button class="tctrl" onclick="toggleCountMode()" style="min-width:110px">${modeLabel}</button>
+        <button class="tctrl" onclick="switchTo('recipes')">← Back</button>
+      </div>
+
+      <div class="water-progress">
+        <div class="water-row">
+          <span>Water poured</span>
+          <span>${pouredSoFar}g / ${r.water}g</span>
+        </div>
+        <div class="water-bar">
+          <div class="water-fill" style="width:${pourPct}%"></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleTimer() {
+  if (!timerRecipe) return;
+  if (timerElapsed >= timerRecipe.totalTimeSec) { resetTimer(); return; }
+  timerRunning = !timerRunning;
+  if (timerRunning) {
+    timerInterval = setInterval(() => {
+      timerElapsed++;
+      if (timerElapsed >= timerRecipe.totalTimeSec) {
+        timerRunning = false;
+        clearInterval(timerInterval);
+      }
+      renderTimer();
+    }, 1000);
+  } else {
+    clearInterval(timerInterval);
+  }
+  renderTimer();
+}
+
+function resetTimer() {
+  timerRunning = false;
+  timerElapsed = 0;
+  if (timerInterval) clearInterval(timerInterval);
+  renderTimer();
+}
+
+// ══════════════════════════════════
+//  ADD / EDIT RECIPE
+// ══════════════════════════════════
+let editSteps = [];
+let selectedFlavors = [];
+
+// Live ratio <-> water calculation.
+// Typing coffee or ratio recalculates water. Typing water recalculates ratio (shown in hint, doesn't overwrite the ratio field while user is actively editing it).
+function handleRatioInput() {
+  const coffeeEl = document.getElementById('f-coffee');
+  const ratioEl = document.getElementById('f-ratio');
+  const waterEl = document.getElementById('f-water');
+  const hint = document.getElementById('ratio-hint');
+
+  const coffee = parseFloat(coffeeEl.value);
+  const ratio = parseFloat(ratioEl.value);
+
+  if (coffee > 0 && ratio > 0) {
+    const water = Math.round(coffee * ratio);
+    waterEl.value = water;
+    hint.textContent = `1:${ratio} → ${coffee}g coffee needs ${water}g water.`;
+  } else if (coffee > 0) {
+    hint.textContent = `Enter a ratio (e.g. 16.5 for 1:16.5) to auto-fill water for ${coffee}g coffee.`;
+  } else {
+    hint.textContent = 'Enter coffee + ratio and water fills in automatically — or type water directly to set ratio.';
+  }
+}
+
+function handleWaterInput() {
+  const coffeeEl = document.getElementById('f-coffee');
+  const ratioEl = document.getElementById('f-ratio');
+  const waterEl = document.getElementById('f-water');
+  const hint = document.getElementById('ratio-hint');
+
+  const coffee = parseFloat(coffeeEl.value);
+  const water = parseFloat(waterEl.value);
+
+  if (coffee > 0 && water > 0) {
+    const ratio = +(water / coffee).toFixed(1);
+    ratioEl.value = ratio;
+    hint.textContent = `${coffee}g coffee with ${water}g water → ratio 1:${ratio}.`;
+  } else {
+    hint.textContent = 'Enter coffee + ratio and water fills in automatically — or type water directly to set ratio.';
+  }
+}
+
+function toggleFlavorTag(tag) {
+  const idx = selectedFlavors.indexOf(tag);
+  if (idx > -1) {
+    selectedFlavors.splice(idx, 1);
+  } else {
+    if (selectedFlavors.length >= 4) { showToast('Max 4 flavour tags.'); return; }
+    selectedFlavors.push(tag);
+  }
+  document.querySelectorAll('.flavor-chip').forEach(chip => {
+    chip.classList.toggle('selected', selectedFlavors.includes(chip.dataset.tag));
+  });
+}
+
+function addStepRow(step) {
+  const idx = editSteps.length;
+  editSteps.push(step || { at: '', desc: '', pour: '' });
+  const container = document.getElementById('steps-editor');
+  const row = document.createElement('div');
+  row.className = 'step-edit-row';
+  row.id = 'step-row-' + idx;
+  row.innerHTML = `
+    <input class="form-input" placeholder="0:30" id="step-at-${idx}" value="${editSteps[idx].at}" oninput="editSteps[${idx}].at=this.value">
+    <input class="form-input" placeholder="Bloom — saturate grounds" id="step-desc-${idx}" value="${editSteps[idx].desc}" oninput="editSteps[${idx}].desc=this.value">
+    <input class="form-input" type="number" placeholder="50" id="step-pour-${idx}" value="${editSteps[idx].pour}" oninput="editSteps[${idx}].pour=this.value">
+    <button class="btn-icon" onclick="removeStepRow(${idx})" title="Remove">×</button>
+  `;
+  container.appendChild(row);
+}
+
+function removeStepRow(idx) {
+  editSteps.splice(idx, 1);
+  rebuildStepEditor();
+}
+
+function rebuildStepEditor() {
+  const container = document.getElementById('steps-editor');
+  container.innerHTML = '';
+  const saved = [...editSteps];
+  editSteps = [];
+  saved.forEach(s => addStepRow(s));
+}
+
+function saveRecipe() {
+  const name = document.getElementById('f-name').value.trim();
+  const author = document.getElementById('f-author').value.trim();
+  const dripper = document.getElementById('f-dripper').value;
+  const coffee = parseFloat(document.getElementById('f-coffee').value);
+  const water = parseFloat(document.getElementById('f-water').value);
+  const temp = parseFloat(document.getElementById('f-temp').value);
+  const grind = document.getElementById('f-grind').value.trim();
+  const totalTime = document.getElementById('f-time').value.trim();
+  const notes = document.getElementById('f-notes').value.trim();
+  const origin = document.getElementById('f-origin').value.trim();
+
+  if (!name) { showToast('Recipe name is required.'); return; }
+  if (!coffee || !water) { showToast('Coffee and water amounts are required.'); return; }
+  if (editSteps.length === 0) { showToast('Add at least one pour step.'); return; }
+
+  // Parse total time to seconds
+  let totalTimeSec = 0;
+  if (totalTime) {
+    const parts = totalTime.split(':');
+    if (parts.length === 2) totalTimeSec = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    else totalTimeSec = parseInt(parts[0]);
+  }
+  // fallback: use last step's time
+  if (!totalTimeSec && editSteps.length > 0) {
+    const last = editSteps[editSteps.length - 1].at;
+    if (last) {
+      const p = last.split(':');
+      totalTimeSec = p.length === 2 ? parseInt(p[0]) * 60 + parseInt(p[1]) + 60 : parseInt(p[0]) + 60;
+    }
+  }
+
+  // Build steps with cumulative totals
+  let running = 0;
+  const steps = editSteps.map(s => {
+    const pour = parseFloat(s.pour) || 0;
+    running += pour;
+    const at = s.at || '0:00';
+    const parts = at.split(':');
+    const atSec = parts.length === 2 ? parseInt(parts[0]) * 60 + parseInt(parts[1]) : parseInt(parts[0]);
+    return { at, atSec, desc: s.desc || 'Pour', pour, total: running };
+  });
+
+  const userRecipes = getUserRecipes();
+
+  if (editingId) {
+    const idx = userRecipes.findIndex(r => r.id === editingId);
+    if (idx > -1) {
+      userRecipes[idx] = { ...userRecipes[idx], name, author, dripper, origin, coffee, water, temp, grind, totalTime: totalTime || `${Math.floor(totalTimeSec/60)}:${String(totalTimeSec%60).padStart(2,'0')}`, totalTimeSec, notes, steps, flavor: [...selectedFlavors] };
+    }
+    saveUserRecipes(userRecipes);
+    showToast('Recipe updated.');
+    const rid = editingId;
+    editingId = null;
+    clearForm();
+    switchTo('recipes');
+    renderSidebar();
+    selectRecipe(rid);
+  } else {
+    const newR = {
+      id: 'user-' + Date.now(), user: true,
+      name, author, dripper, origin,
+      coffee, water, temp, grind,
+      totalTime: totalTime || `${Math.floor(totalTimeSec/60)}:${String(totalTimeSec%60).padStart(2,'0')}`,
+      totalTimeSec, notes, steps,
+      flavor: [...selectedFlavors]
+    };
+    userRecipes.push(newR);
+    saveUserRecipes(userRecipes);
+    showToast('Recipe saved.');
+    clearForm();
+    switchTo('recipes');
+    renderSidebar();
+    selectRecipe(newR.id);
+  }
+}
+
+function editRecipe(id) {
+  const r = getUserRecipes().find(x => x.id === id);
+  if (!r) return;
+  editingId = id;
+  switchTo('add');
+  document.getElementById('form-title').textContent = 'Edit recipe';
+  document.getElementById('cancel-edit-btn').style.display = '';
+
+  document.getElementById('f-name').value = r.name || '';
+  document.getElementById('f-dripper').value = r.dripper || 'V60';
+  document.getElementById('f-author').value = r.author || '';
+  document.getElementById('f-origin').value = r.origin || '';
+  document.getElementById('f-coffee').value = r.coffee || '';
+  document.getElementById('f-water').value = r.water || '';
+  document.getElementById('f-ratio').value = (r.coffee && r.water) ? +(r.water / r.coffee).toFixed(1) : '';
+  document.getElementById('f-temp').value = r.temp || '';
+  document.getElementById('f-grind').value = r.grind || '';
+  document.getElementById('f-time').value = r.totalTime || '';
+  document.getElementById('f-notes').value = r.notes || '';
+  document.getElementById('ratio-hint').textContent = (r.coffee && r.water)
+    ? `${r.coffee}g coffee with ${r.water}g water → ratio 1:${(+(r.water/r.coffee).toFixed(1))}.`
+    : 'Enter coffee + ratio and water fills in automatically — or type water directly to set ratio.';
+
+  editSteps = [];
+  document.getElementById('steps-editor').innerHTML = '';
+  (r.steps || []).forEach(s => addStepRow({ at: s.at, desc: s.desc, pour: s.pour }));
+
+  selectedFlavors = [...(r.flavor || [])];
+  document.querySelectorAll('.flavor-chip').forEach(chip => {
+    chip.classList.toggle('selected', selectedFlavors.includes(chip.dataset.tag));
+  });
+}
+
+function cancelEdit() {
+  editingId = null;
+  clearForm();
+  switchTo('recipes');
+}
+
+function clearForm() {
+  ['f-name','f-author','f-origin','f-coffee','f-water','f-ratio','f-temp','f-time','f-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('f-dripper').value = 'V60';
+  document.getElementById('f-grind').value = '';
+  document.getElementById('steps-editor').innerHTML = '';
+  document.getElementById('ratio-hint').textContent = 'Enter coffee + ratio and water fills in automatically — or type water directly to set ratio.';
+  selectedFlavors = [];
+  document.querySelectorAll('.flavor-chip').forEach(chip => chip.classList.remove('selected'));
+  document.getElementById('form-title').textContent = 'Add your recipe';
+  document.getElementById('cancel-edit-btn').style.display = 'none';
+  editSteps = [];
+  editingId = null;
+}
+
+// ══════════════════════════════════
+//  DELETE
+// ══════════════════════════════════
+function confirmDelete(id) {
+  const r = getAllRecipes().find(x => x.id === id);
+  document.getElementById('modal-title').textContent = 'Delete "' + (r ? r.name : 'recipe') + '"?';
+  document.getElementById('modal-body').textContent = 'This cannot be undone.';
+  document.getElementById('modal-confirm-btn').onclick = () => deleteRecipe(id);
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('confirm-modal').classList.remove('open');
+}
+function deleteRecipe(id) {
+  const userRecipes = getUserRecipes().filter(r => r.id !== id);
+  saveUserRecipes(userRecipes);
+  closeModal();
+  showToast('Recipe deleted.');
+  selectedId = null;
+  renderSidebar();
+  document.getElementById('detail-pane').innerHTML = `
+    <button class="mobile-back-btn" onclick="closeDetailMobile()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      All recipes
+    </button>
+    <div class="empty-state"><p>Select a recipe to see its pour schedule.</p></div>
+  `;
+  closeDetailMobile();
+}
+
+// ══════════════════════════════════
+//  PANEL NAV
+// ══════════════════════════════════
+function switchTo(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.hn-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(name + '-panel').classList.add('active');
+  document.querySelectorAll('.hn-btn').forEach(b => {
+    if (b.textContent.toLowerCase().replace(/\s|\+/g,'').includes(name.replace('add','add'))) {
+      if ((name === 'add' && b.textContent.includes('+')) ||
+          (name !== 'add' && b.textContent.toLowerCase().includes(name))) {
+        b.classList.add('active');
+      }
+    }
+  });
+
+  // Sync bottom tab bar (mobile)
+  document.querySelectorAll('.bt-btn').forEach(b => b.classList.remove('active'));
+  const tabMap = { recipes: '.bt-tab-recipes', add: '.bt-tab-add', timer: '.bt-tab-timer' };
+  const activeTab = document.querySelector(tabMap[name]);
+  if (activeTab) activeTab.classList.add('active');
+
+  if (name === 'add' && !editingId) {
+    // fresh form — ensure first step row exists if empty
+    if (editSteps.length === 0) addStepRow();
+  }
+}
+
+// ══════════════════════════════════
+//  TOAST
+// ══════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ══════════════════════════════════
+//  INIT
+// ══════════════════════════════════
+renderSidebar();
+// On desktop, auto-select the first recipe so the detail pane isn't empty.
+// On mobile, start on the plain recipe list — the detail screen only opens when tapped.
+if (window.innerWidth > 680) {
+  selectRecipe(CHAMPION_RECIPES[0].id);
+} else {
+  document.getElementById('detail-pane').innerHTML = `
+    <button class="mobile-back-btn" onclick="closeDetailMobile()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      All recipes
+    </button>
+    <div class="empty-state"><p>Select a recipe to see the full pour schedule and brew notes.</p></div>
+  `;
+}
+</script>
+</body>
+</html>
